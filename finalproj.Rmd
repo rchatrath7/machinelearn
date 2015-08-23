@@ -1,0 +1,88 @@
+---
+title: "Practical Machine Learning Final Project"
+author: "Rakesh Chatrath"
+date: "August 23, 2015"
+output: html_document
+---
+Practical Machine Learning Final Project 
+===========================================================================================================
+This is the final project for the Coursera class "Practical Machine Learning" offered by Jeff Leek, PhD, Roger D. Peng, PhD, and Brian Caffo, PhD at John's Hopkins University. This project gave the task of building a prediction algorithm for determining what type of accelerometers were being used based on data from 6 participants using accelerometers on the belt, arm, forearm and dummbell. 
+
+The following libraries were used for model creation: 
+
+'''{r}
+library(caret)
+library(data.table)
+library(ggplot2)
+library(randomForest)
+'''
+
+Next, data for training and testing were loaded into data.tables 
+'''{r}
+setInternet2(TRUE)
+trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- fread(trainURL)
+testing <- fread(testURL)
+'''
+
+The data was cleaned and subsetted to exclude any NA, missing, or extraneous values unuseful to model fitting. 
+'''{r}
+# Find columns with any missing values or NAs
+anyMissing <- sapply(training, function(x) any(is.na(x) | x == ""))
+
+# Find predictor variables -- Belt, arm, forearm and dumbbell vars.
+anyPredictors <- !anyMissing & grepl("belt| [(^fore)]arm | dumbbell | forearm", 
+                                     names(anyMissing))
+                                     
+# Create vector to include all predictor candidates
+predictionVars <- names(anyMissing)[anyPredictors]
+
+# subset the data sets into prediction variables and classe 
+training <- training[, c("clasee", predictionVars), with = FALSE]
+testing <- testing[, c("classe", predictionVars), with = FALSE]
+'''
+
+The caret package was used to create modeling sets with 70% for trainig and 30% for testing. 
+'''{r}
+set.seed(303030)
+indice <- createDataPartition(y=training$classe, p=0.70, list=FALSE)
+trainModel <- training[indice, ]
+probeModel <- training[-indice, ]
+'''
+
+Random forest modeling techniqure and 7-fold cross-validation were used to create the model that will be used for predicting values. 
+'''{r}
+# Train model with random forests and 7-fold cross validation 
+modRandomForest <- train(classe~ .,data=trainModel,method="rf",
+                trControl=trainControl(method="cv",number=7),
+                prox=TRUE,allowParallel=TRUE)
+'''
+
+Accuracy was tested using the following. The resultant error out of sample error was 2%! 
+'''{r}
+predictTrain <- predict(modRandomForest, newdata=trainModel)
+confusionMatrix(predictTrain,trainModel$classe)
+
+predictTest <- predict(modRandomForest, newdata=testModel)
+confusionMatrix(predictTest,probeModel$classe)
+'''
+
+For Coursera submission!
+'''
+# Write files to text files to for testing, COURSERA Code 
+setwd("C:/Users/Rakesh Chatrath/Workspace/Coursera/practmachinelearn")
+pml_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}
+answers <- predict(modRandomForest,newdata=testing)
+pml_write_files(answers)
+'''
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
