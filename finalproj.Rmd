@@ -10,25 +10,25 @@ This is the final project for the Coursera class "Practical Machine Learning" of
 
 The following libraries were used for model creation: 
 
-'''{r}
+```{r}
 library(caret)
 library(data.table)
 library(ggplot2)
 library(randomForest)
-'''
+```
 
 Next, data for training and testing were loaded into data.tables 
-'''{r}
+```{r}
 setInternet2(TRUE)
 trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 
 training <- fread(trainURL)
 testing <- fread(testURL)
-'''
+```
 
 The data was cleaned and subsetted to exclude any NA, missing, or extraneous values unuseful to model fitting. 
-'''{r}
+```{r}
 # Find columns with any missing values or NAs
 anyMissing <- sapply(training, function(x) any(is.na(x) | x == ""))
 
@@ -42,35 +42,35 @@ predictionVars <- names(anyMissing)[anyPredictors]
 # subset the data sets into prediction variables and classe 
 training <- training[, c("clasee", predictionVars), with = FALSE]
 testing <- testing[, c("classe", predictionVars), with = FALSE]
-'''
+```
 
 The caret package was used to create modeling sets with 70% for trainig and 30% for testing. 
-'''{r}
+```{r}
 set.seed(303030)
 indice <- createDataPartition(y=training$classe, p=0.70, list=FALSE)
 trainModel <- training[indice, ]
 probeModel <- training[-indice, ]
-'''
+```
 
 Random forest modeling techniqure and 7-fold cross-validation were used to create the model that will be used for predicting values. 
-'''{r}
+```{r}
 # Train model with random forests and 7-fold cross validation 
 modRandomForest <- train(classe~ .,data=trainModel,method="rf",
                 trControl=trainControl(method="cv",number=7),
                 prox=TRUE,allowParallel=TRUE)
-'''
+```
 
 Accuracy was tested using the following. The resultant error out of sample error was 2%! 
-'''{r}
+```{r}
 predictTrain <- predict(modRandomForest, newdata=trainModel)
 confusionMatrix(predictTrain,trainModel$classe)
 
 predictTest <- predict(modRandomForest, newdata=testModel)
 confusionMatrix(predictTest,probeModel$classe)
-'''
+```
 
 For Coursera submission!
-'''
+```
 # Write files to text files to for testing, COURSERA Code 
 setwd("C:/Users/Rakesh Chatrath/Workspace/Coursera/practmachinelearn")
 pml_write_files = function(x){
@@ -82,7 +82,7 @@ pml_write_files = function(x){
 }
 answers <- predict(modRandomForest,newdata=testing)
 pml_write_files(answers)
-'''
+```
 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
